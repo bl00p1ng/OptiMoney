@@ -1,0 +1,9 @@
+entrypoint: gunicorn -b :$PORT main:app
+
+instance_class: B2
+
+runtime: python311
+
+env_variables:
+  ENVIRONMENT: "production"
+  FIREBASE_CREDENTIALS_PATH: ./credentials/firebase-key.json
