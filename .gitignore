@@ -5,7 +5,7 @@
 .idea
 **/node_modules/*
 **/.firebaserc
-.credentials/firebase-key.json
+credentials/firebase-key.json
 
 ### Firebase Patch ###
 .runtimeconfig.json
