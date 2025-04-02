@@ -8,6 +8,7 @@ from flask import Flask, request, g
 from flask_cors import CORS
 from config.firebase_config import initialize_firebase
 from utils.logger import get_logger, app_logger
+from routes import register_routes
 
 def create_app():
     """
@@ -58,14 +59,10 @@ def create_app():
         app_logger.error(f"Error no capturado: {str(e)}", exc_info=True)
         return {"error": "Error interno del servidor"}, 500
     
-    app_logger.info("Todos los blueprints registrados correctamente")
+    # Registrar todas las rutas de la aplicación
+    register_routes(app)
     
-    # Ruta para verificar que la aplicación está funcionando
-    @app.route('/health', methods=['GET'])
-    def health_check():
-        """Endpoint básico para verificar que la aplicación está funcionando."""
-        app_logger.debug("Health check solicitado")
-        return {'status': 'ok', 'environment': app.config['ENV']}
+    app_logger.info("Aplicación configurada correctamente")
     
     return app
 
@@ -73,8 +70,6 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    # Esto se ejecutará cuando se corra directamente este archivo
-    # pero no cuando se importe como módulo
     port = int(os.environ.get('PORT', 8080))
     app_logger.info(f"Iniciando servidor en http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port)
