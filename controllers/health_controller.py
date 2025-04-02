@@ -4,6 +4,7 @@ Controlador para verificar el estado y conectividad del sistema.
 from typing import Dict, Any
 from config.firebase_config import get_firestore_client
 from utils.logger import get_logger
+from firebase_admin import firestore
 
 # Logger específico para este módulo
 logger = get_logger(__name__)
@@ -63,7 +64,9 @@ class HealthController:
             
             # Realizar una operación simple para verificar conectividad
             collection_ref = db.collection('_health_check')
-            current_time = {"timestamp": db.server_timestamp()}
+            
+            # Usar SERVER_TIMESTAMP correctamente
+            current_time = {"timestamp": firestore.SERVER_TIMESTAMP}
             
             # Añadir documento temporal
             doc_ref = collection_ref.document('connectivity_test')
