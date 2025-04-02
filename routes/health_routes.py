@@ -41,7 +41,7 @@ async def check_health():
         }), 500
 
 @health_bp.route('/ping', methods=['GET'])
-async def ping():
+def ping():
     """
     Endpoint simple para verificar que la aplicación está respondiendo.
     
