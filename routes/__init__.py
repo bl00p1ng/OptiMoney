@@ -18,6 +18,8 @@ def register_routes(app: Flask) -> None:
         # Importar funciones de registro de cada módulo de rutas
         # from routes.transaction_routes import register_transaction_routes
         from routes.health_routes import register_health_routes
+        from routes.category_routes import register_category_routes
+
         # from routes.category_routes import register_category_routes
         
         # Registrar cada conjunto de rutas
@@ -25,9 +27,7 @@ def register_routes(app: Flask) -> None:
         # register_transaction_routes(app)
         # register_category_routes(app)
         
-        # Aquí se añadirán las demás rutas cuando se implementen
-        # register_budget_routes(app)
-        # etc.
+        register_category_routes(app)
         
         logger.info("Todas las rutas API han sido registradas correctamente")
     except Exception as e:

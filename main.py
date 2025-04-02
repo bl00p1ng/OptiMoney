@@ -70,6 +70,8 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
+    # Esto se ejecutará cuando se corra directamente este archivo
+    # pero no cuando se importe como módulo
     port = int(os.environ.get('PORT', 8080))
     app_logger.info(f"Iniciando servidor en http://0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port)
