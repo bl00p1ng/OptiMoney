@@ -28,7 +28,6 @@ def register_routes(app: Flask) -> None:
         register_transaction_routes(app)
         register_category_routes(app)
         register_analysis_routes(app)
-        register_category_routes(app)
         register_budget_routes(app)
         register_recommendation_routes(app)
         

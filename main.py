@@ -8,6 +8,7 @@ from flask import Flask, request, g
 from flask_cors import CORS
 from config.firebase_config import initialize_firebase
 from utils.logger import get_logger, app_logger
+from utils.repository_patches import apply_repository_patches  # Importar la función de parches
 from routes import register_routes
 
 def create_app():
@@ -27,6 +28,9 @@ def create_app():
     
     # Se inicializa la conexión con Firebase
     initialize_firebase()
+    
+    # Aplicar parches a los repositorios ANTES de cargar cualquier controlador
+    apply_repository_patches()
     
     # Configuración desde variables de entorno
     environment = os.environ.get('ENVIRONMENT', 'development')
