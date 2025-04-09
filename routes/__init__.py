@@ -20,6 +20,8 @@ def register_routes(app: Flask) -> None:
         from routes.health_routes import register_health_routes
         from routes.category_routes import register_category_routes
         from routes.analysis_routes import register_analysis_routes
+        from routes.budget_routes import register_budget_routes
+        from routes.recommendation_routes import register_recommendation_routes
         
         # Registrar cada conjunto de rutas
         register_health_routes(app)
@@ -27,6 +29,8 @@ def register_routes(app: Flask) -> None:
         register_category_routes(app)
         register_analysis_routes(app)
         register_category_routes(app)
+        register_budget_routes(app)
+        register_recommendation_routes(app)
         
         logger.info("Todas las rutas API han sido registradas correctamente")
     except Exception as e:
