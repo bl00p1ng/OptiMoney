@@ -8,7 +8,7 @@ from models.repositories.base_repository import BaseRepository
 from utils.logger import get_logger
 
 # Logger específico para este módulo
-logger = get_logger(_name_)
+logger = get_logger(__name__)
 
 class TransactionRepository(BaseRepository[Transaction]):
     """

@@ -55,8 +55,7 @@ def initialize_firebase():
     
     except Exception as e:
         logger.error(f"Error al inicializar Firebase: {e}", exc_info=True)
-        # En un entorno real, quizás queramos reintentarlo o lanzar la excepción
-        # dependiendo del contexto
+        
         raise
 
 def get_firestore_client():
