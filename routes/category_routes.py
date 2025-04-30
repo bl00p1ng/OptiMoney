@@ -1,5 +1,5 @@
 """
-Módulo que define las rutas API para operaciones con categorías.
+Módulo que define las rutas API para operaciones con categorías - Versión temporal para pruebas.
 """
 from flask import Blueprint, request, jsonify
 from controllers.category_controller import CategoryController
@@ -31,8 +31,10 @@ async def get_categories():
         # Extraer parámetros de consulta
         category_type = request.args.get('type')
         
-        # Obtener ID del usuario autenticado
-        user_id = request.auth_user['uid']
+        # MODIFICACIÓN TEMPORAL: Usar un user_id fijo para pruebas
+        # En lugar de obtener el ID del usuario autenticado
+        # user_id = request.auth_user['uid']
+        user_id = "test_user_id"  # ID de usuario para pruebas
         
         # Llamar al controlador según el tipo
         if category_type:
@@ -50,6 +52,8 @@ async def get_categories():
             'success': False,
             'error': f"Error al procesar la solicitud: {str(e)}"
         }), 500
+
+# Resto del código sin cambios...
 
 @category_bp.route('', methods=['POST'])
 # @authenticate_user
@@ -70,8 +74,9 @@ async def create_category():
         # Obtener datos del cuerpo de la solicitud
         data = request.get_json()
         
-        # Añadir ID del usuario autenticado
-        data['user_id'] = request.auth_user['uid']
+        # MODIFICACIÓN TEMPORAL: Usar un user_id fijo para pruebas
+        # data['user_id'] = request.auth_user['uid']
+        data['user_id'] = "test_user_id"  # ID de usuario para pruebas
         
         # Llamar al controlador
         result = await category_controller.create_category(data)
@@ -108,8 +113,9 @@ async def update_category(category_id):
         # Obtener datos del cuerpo de la solicitud
         data = request.get_json()
         
-        # Obtener ID del usuario autenticado
-        user_id = request.auth_user['uid']
+        # MODIFICACIÓN TEMPORAL: Usar un user_id fijo para pruebas
+        # user_id = request.auth_user['uid']
+        user_id = "test_user_id"  # ID de usuario para pruebas
         
         # Llamar al controlador
         result = await category_controller.update_category(category_id, user_id, data)
@@ -138,8 +144,9 @@ async def delete_category(category_id):
         JSON: Resultado de la operación.
     """
     try:
-        # Obtener ID del usuario autenticado
-        user_id = request.auth_user['uid']
+        # MODIFICACIÓN TEMPORAL: Usar un user_id fijo para pruebas
+        # user_id = request.auth_user['uid']
+        user_id = "test_user_id"  # ID de usuario para pruebas
         
         # Llamar al controlador
         result = await category_controller.delete_category(category_id, user_id)
