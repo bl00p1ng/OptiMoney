@@ -1,6 +1,6 @@
 # OptiMoney
 
-**OptiMoney** es una aplicación web para la gestión y seguimiento de las finanzad personales. Permite registrar todos los gastos realizados por el usuario, definir presupuestos y conocer sugerencias de ahorro y optimización de gatos.
+**OptiMoney** es una aplicación web para la gestión y seguimiento de las finanzas personales. Permite registrar todos los gastos realizados por el usuario, definir presupuestos y conocer sugerencias de ahorro y optimización de gastos.
 
 ## Ejecución de la app
 
@@ -42,4 +42,43 @@ Algunas consideraciones adicionales para el entorno de desarrollo:
   FLASK_APP=main.py FLASK_DEBUG=1 flask run --port=8080
   ```
 
-Para probar que todo funciona correctamente, acceder a `http://localhost:8080/health` en el navegador, que debería mostrar un mensaje de estado indicando que la aplicación está funcionando.
+## Pruebas de la aplicación
+
+### Endpoints de prueba
+
+Puedes verificar la correcta configuración mediante estos endpoints:
+
+1. **Verificar estado general**:
+   - GET `/api/ping` - Respuesta simple para verificar que la API responde.
+   - GET `/api/health` - Verificar el estado general y conectividad con Firebase.
+
+2. **Inicializar categorías predefinidas**:
+   - POST `/api/categories/initialize-defaults` - Crea las categorías predefinidas del sistema.
+
+3. **Categorías**:
+   - GET `/api/categories` - Obtener categorías (requiere autenticación).
+   - POST `/api/categories` - Crear categoría personalizada (requiere autenticación).
+
+4. **Transacciones**:
+   - POST `/api/transactions` - Crear transacción (requiere autenticación).
+   - GET `/api/transactions` - Listar transacciones (requiere autenticación).
+
+La mayoría de las rutas requieren autenticación de Firebase. Para pruebas de desarrollo, puedes crear un token utilizando la función `get_test_token` del módulo `utils.auth_middleware`.
+
+### Pruebas unitarias
+
+Para ejecutar las pruebas unitarias:
+
+```bash
+python -m tests.run_tests
+```
+
+También puedes ejecutar tests individuales:
+
+```bash
+python -m unittest tests.test_category_model
+```
+
+## Verificación inicial
+
+Para probar que todo funciona correctamente, acceder a `http://localhost:8080/api/ping` en el navegador, que debería mostrar un mensaje de estado indicando que la aplicación está funcionando.
