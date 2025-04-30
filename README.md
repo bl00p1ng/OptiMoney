@@ -82,3 +82,207 @@ python -m unittest tests.test_category_model
 ## Verificación inicial
 
 Para probar que todo funciona correctamente, acceder a `http://localhost:8080/api/ping` en el navegador, que debería mostrar un mensaje de estado indicando que la aplicación está funcionando.
+
+# Documentación del Sistema de Autenticación de OptiMoney
+
+## Descripción General
+
+El sistema de autenticación de OptiMoney utiliza Firebase Authentication para gestionar la autenticación de usuarios, complementado con un sistema JWT propio para mayor flexibilidad. Este documento describe la implementación, endpoints disponibles y cómo utilizarlos.
+
+## Endpoints de Autenticación
+
+### Registro de Usuario
+- **URL**: `/api/auth/register`
+- **Método**: `POST`
+- **Cuerpo de la solicitud**:
+  ```json
+  {
+    "email": "usuario@ejemplo.com",
+    "password": "contraseña123",
+    "name": "Nombre Completo"
+  }
+  ```
+- **Respuesta exitosa** (201 Created):
+  ```json
+  {
+    "success": true,
+    "message": "Usuario registrado exitosamente",
+    "user": {
+      "id": "user123",
+      "email": "usuario@ejemplo.com",
+      "name": "Nombre Completo"
+    },
+    "auth": {
+      "token": "jwt_token_here",
+      "expiry": 1715126400
+    }
+  }
+  ```
+
+### Inicio de Sesión
+- **URL**: `/api/auth/login`
+- **Método**: `POST`
+- **Cuerpo de la solicitud**:
+  ```json
+  {
+    "email": "usuario@ejemplo.com",
+    "password": "contraseña123"
+  }
+  ```
+- **Respuesta exitosa** (200 OK):
+  ```json
+  {
+    "success": true,
+    "message": "Inicio de sesión exitoso",
+    "user": {
+      "id": "user123",
+      "email": "usuario@ejemplo.com",
+      "name": "Nombre Completo",
+      "settings": {
+        "currency": "CLP",
+        "notificationsEnabled": true
+      }
+    },
+    "auth": {
+      "token": "jwt_token_here",
+      "expiry": 1715126400
+    }
+  }
+  ```
+
+### Obtener Perfil de Usuario
+- **URL**: `/api/auth/profile`
+- **Método**: `GET`
+- **Headers**: 
+  - `Authorization: Bearer {token}`
+- **Respuesta exitosa** (200 OK):
+  ```json
+  {
+    "success": true,
+    "profile": {
+      "id": "user123",
+      "email": "usuario@ejemplo.com",
+      "name": "Nombre Completo",
+      "settings": {
+        "currency": "CLP",
+        "notificationsEnabled": true
+      },
+      "email_verified": true,
+      "created_at": "2025-04-01T12:00:00Z",
+      "firebase_created_at": 1714576800000
+    }
+  }
+  ```
+
+### Actualizar Perfil de Usuario
+- **URL**: `/api/auth/profile`
+- **Método**: `PUT`
+- **Headers**: 
+  - `Authorization: Bearer {token}`
+- **Cuerpo de la solicitud**:
+  ```json
+  {
+    "name": "Nuevo Nombre",
+    "settings": {
+      "currency": "USD",
+      "notificationsEnabled": false
+    }
+  }
+  ```
+- **Respuesta exitosa** (200 OK):
+  ```json
+  {
+    "success": true,
+    "message": "Perfil actualizado correctamente",
+    "profile": {
+      "id": "user123",
+      "email": "usuario@ejemplo.com",
+      "name": "Nuevo Nombre",
+      "settings": {
+        "currency": "USD",
+        "notificationsEnabled": false
+      },
+      "email_verified": true,
+      "created_at": "2025-04-01T12:00:00Z"
+    }
+  }
+  ```
+
+### Cambiar Contraseña
+- **URL**: `/api/auth/change-password`
+- **Método**: `POST`
+- **Headers**: 
+  - `Authorization: Bearer {token}`
+- **Cuerpo de la solicitud**:
+  ```json
+  {
+    "current_password": "contraseña123",
+    "new_password": "nuevaContraseña456"
+  }
+  ```
+- **Respuesta exitosa** (200 OK):
+  ```json
+  {
+    "success": true,
+    "message": "Contraseña actualizada correctamente"
+  }
+  ```
+
+### Verificar Token
+- **URL**: `/api/auth/verify`
+- **Método**: `GET`
+- **Headers**: 
+  - `Authorization: Bearer {token}`
+- **Respuesta exitosa** (200 OK):
+  ```json
+  {
+    "success": true,
+    "message": "Token válido",
+    "user": {
+      "id": "user123",
+      "email": "usuario@ejemplo.com",
+      "name": "Nombre Completo"
+    }
+  }
+  ```
+
+## Uso del Token de Autenticación
+
+Una vez obtenido el token de autenticación (mediante registro o inicio de sesión), este debe incluirse en todas las peticiones a endpoints protegidos mediante el encabezado HTTP `Authorization`:
+
+```
+Authorization: Bearer {token}
+```
+
+El token tiene una validez de 24 horas por defecto, aunque este valor es configurable mediante la variable de entorno `TOKEN_EXPIRY`.
+
+## Autenticación en Desarrollo
+
+Para facilitar el desarrollo, se ha implementado un sistema de tokens de desarrollo que pueden utilizarse en entornos que no sean de producción:
+
+```
+Authorization: Bearer dev_{user_id}
+```
+
+Este tipo de token solo funcionará si la variable de entorno `ENVIRONMENT` no está configurada como "production".
+
+## Implementación Técnica
+
+El sistema de autenticación utiliza:
+
+1. **Firebase Authentication**: Para la autenticación principal de usuarios.
+2. **JWT (JSON Web Tokens)**: Como mecanismo alternativo y para mayor flexibilidad.
+3. **Middleware Flask**: Para proteger rutas que requieren autenticación.
+
+La implementación se encuentra en:
+- `controllers/auth_controller.py`: Lógica de negocio para autenticación
+- `routes/auth_routes.py`: Endpoints de la API de autenticación
+- `utils/auth_middleware.py`: Middleware para proteger rutas
+
+## Variables de Entorno
+
+La configuración del sistema de autenticación puede personalizarse mediante las siguientes variables de entorno:
+
+- `JWT_SECRET`: Clave secreta para firmar los tokens JWT
+- `TOKEN_EXPIRY`: Tiempo de validez del token en segundos (por defecto: 86400, es decir, 24 horas)
+- `ENVIRONMENT`: Entorno de la aplicación ("development" o "production")
