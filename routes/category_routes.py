@@ -3,8 +3,8 @@ Módulo que define las rutas API para operaciones con categorías - Versión tem
 """
 from flask import Blueprint, request, jsonify
 from controllers.category_controller import CategoryController
+from utils.auth_middleware import authenticate_user
 from utils.logger import get_logger
-# from utils.auth_middleware import authenticate_user
 
 # Logger específico para este módulo
 logger = get_logger(__name__)
@@ -16,7 +16,7 @@ category_controller = CategoryController()
 category_bp = Blueprint('categories', __name__, url_prefix='/api/categories')
 
 @category_bp.route('', methods=['GET'])
-# @authenticate_user
+@authenticate_user
 async def get_categories():
     """
     Obtiene todas las categorías disponibles para el usuario.
@@ -56,7 +56,7 @@ async def get_categories():
 # Resto del código sin cambios...
 
 @category_bp.route('', methods=['POST'])
-# @authenticate_user
+@authenticate_user
 async def create_category():
     """
     Crea una nueva categoría personalizada.
@@ -93,7 +93,7 @@ async def create_category():
         }), 500
 
 @category_bp.route('/<category_id>', methods=['PUT'])
-# @authenticate_user
+@authenticate_user
 async def update_category(category_id):
     """
     Actualiza una categoría existente.
@@ -132,7 +132,7 @@ async def update_category(category_id):
         }), 500
 
 @category_bp.route('/<category_id>', methods=['DELETE'])
-# @authenticate_user
+@authenticate_user
 async def delete_category(category_id):
     """
     Elimina una categoría personalizada.
