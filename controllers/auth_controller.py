@@ -10,12 +10,12 @@ import time
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import jwt
-from werkzeug.security import generate_password_hash, check_password_hash
 from firebase_admin import auth
 
 from models.user_model import User
 from models.repositories.user_repository import UserRepository
 from utils.logger import get_logger
+from config.firebase_auth_client import firebase_auth_client
 
 # Logger específico para este módulo
 logger = get_logger(__name__)
@@ -75,15 +75,26 @@ class AuthController:
                 }
                 
             # Verificar si el usuario ya existe
-            existing_user = await self.user_repo.get_by_email(email)
-            if existing_user:
+            try:
+                # Verificar en Firebase
+                auth.get_user_by_email(email)
                 return {
                     "success": False,
                     "error": "El email ya está registrado"
                 }
+            except auth.UserNotFoundError:
+                # Si no existe, continuar con el registro
+                pass
+            except Exception as e:
+                logger.error(f"Error al verificar existencia de email: {str(e)}", exc_info=True)
+                return {
+                    "success": False,
+                    "error": f"Error al verificar disponibilidad de email: {str(e)}"
+                }
                 
             # Crear usuario en Firebase Authentication
             try:
+                # Crear usuario
                 firebase_user = auth.create_user(
                     email=email,
                     password=password,
@@ -98,7 +109,7 @@ class AuthController:
                     "error": f"Error al crear usuario: {str(e)}"
                 }
                 
-            # Crear usuario en nuestra base de datos
+            # Crear usuario la DB
             user = User(
                 id=uid,
                 email=email,
@@ -157,52 +168,39 @@ class AuthController:
             email = credentials["email"]
             password = credentials["password"]
             
-            # Autenticar en Firebase
-            try:
-                # Obtener el registro de correo/contraseña sin activar la autenticación personalizada
-                user_record = auth.get_user_by_email(email)
-                
-                # Verificamos la contraseña con Firebase Auth
-                auth.verify_password(email, password)
-                
-                # Si llegamos aquí, la autenticación fue exitosa
-                uid = user_record.uid
-                name = user_record.display_name or "Usuario"
-                
-            except auth.UserNotFoundError:
-                logger.warning(f"Intento de login con email no registrado: {email}")
+            # Autenticar mediante Firebase REST API
+            success, user_data = firebase_auth_client.verify_credentials(email, password)
+            
+            if not success:
                 return {
                     "success": False,
                     "error": "Credenciales inválidas"
                 }
-            except auth.PasswordNotMatchError:
-                logger.warning(f"Intento de login con contraseña incorrecta para: {email}")
-                return {
-                    "success": False,
-                    "error": "Credenciales inválidas"
-                }
-            except Exception as e:
-                logger.error(f"Error al autenticar con Firebase: {str(e)}", exc_info=True)
-                return {
-                    "success": False,
-                    "error": "Error de autenticación"
-                }
                 
-            # Obtener información adicional del usuario desde nuestra BD
+            # Extraer datos del usuario
+            uid = user_data["uid"]
+            firebase_token = user_data["idToken"]
+            
+            # Buscar usuario en la BD
             user = await self.user_repo.get_by_id(uid)
+            
+            # Si no existe en la BD, crearlo
             if not user:
-                # Si el usuario existe en Firebase pero no en nuestra BD,
-                # lo creamos automáticamente
+                display_name = user_data.get("displayName", email.split("@")[0])
                 user = User(
                     id=uid,
                     email=email,
-                    name=name
+                    name=display_name,
+                    settings={
+                        "currency": "CLP",
+                        "notificationsEnabled": True
+                    }
                 )
                 await self.user_repo.add(user)
-                logger.info(f"Usuario creado automáticamente en BD: {uid}")
+                logger.info(f"Creado usuario en base de datos: {uid}")
             
-            # Generar token de autenticación
-            token, expiry = self._generate_auth_token(uid, email, name)
+            # Generar token JWT
+            token, expiry = self._generate_auth_token(uid, email, user.name)
             
             return {
                 "success": True,
@@ -215,10 +213,11 @@ class AuthController:
                 },
                 "auth": {
                     "token": token,
+                    "firebase_token": firebase_token,
                     "expiry": expiry
                 }
             }
-            
+                
         except Exception as e:
             logger.error(f"Error en proceso de login: {str(e)}", exc_info=True)
             return {
@@ -239,7 +238,7 @@ class AuthController:
         """
         try:
             # Verificar si es un token de ambiente de desarrollo
-            if token.startswith("dev_") and os.environ.get('ENVIRONMENT') != 'production':
+            if token.startswith("dev_") and os.environ.get('ENVIRONMENT', 'development') != 'production':
                 # Tokens de desarrollo para pruebas
                 parts = token.split("_")
                 if len(parts) < 2:
@@ -263,10 +262,10 @@ class AuthController:
                 # Verificar el token con Firebase Auth
                 decoded_token = auth.verify_id_token(token)
                 return True, decoded_token
-            except Exception as e:
-                logger.warning(f"Error al verificar token con Firebase: {str(e)}")
+            except Exception as firebase_error:
+                logger.warning(f"Error al verificar token con Firebase: {str(firebase_error)}")
                 
-                # Si falla la verificación con Firebase, intentar con nuestro sistema JWT
+                # Si falla la verificación con Firebase, intentar con el sistema JWT propio
                 try:
                     payload = jwt.decode(token, self.jwt_secret, algorithms=['HS256'])
                     
@@ -453,16 +452,21 @@ class AuthController:
                     "error": "Usuario no encontrado"
                 }
                 
-            # Verificar contraseña actual con Firebase
+            # Verificar la contraseña actual
             try:
-                # Esta operación requiere obtener el email
                 firebase_user = auth.get_user(user_id)
                 email = firebase_user.email
                 
-                # Verificar la contraseña actual
-                auth.verify_password(email, current_password)
+                # Verificar credenciales actuales con Firebase REST API
+                success, _ = firebase_auth_client.verify_credentials(email, current_password)
                 
-                # Actualizar contraseña en Firebase
+                if not success:
+                    return {
+                        "success": False,
+                        "error": "La contraseña actual es incorrecta"
+                    }
+                
+                # Si la contraseña actual es correcta, actualizar a la nueva
                 auth.update_user(
                     user_id,
                     password=new_password
@@ -473,16 +477,11 @@ class AuthController:
                     "message": "Contraseña actualizada correctamente"
                 }
                 
-            except auth.PasswordNotMatchError:
-                return {
-                    "success": False,
-                    "error": "La contraseña actual es incorrecta"
-                }
             except Exception as e:
                 logger.error(f"Error al cambiar contraseña: {str(e)}", exc_info=True)
                 return {
                     "success": False,
-                    "error": "Error al cambiar contraseña"
+                    "error": f"Error al cambiar contraseña: {str(e)}"
                 }
             
         except Exception as e:
@@ -523,5 +522,9 @@ class AuthController:
         
         # Generar token
         token = jwt.encode(payload, self.jwt_secret, algorithm='HS256')
+        
+        # Si es una cadena de bytes, convertir a str
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
         
         return token, expiry
