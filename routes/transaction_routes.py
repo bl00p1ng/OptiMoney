@@ -4,8 +4,8 @@ Módulo que define las rutas API para operaciones con transacciones.
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from controllers.transaction_controller import TransactionController
+from utils.auth_middleware import authenticate_user
 from utils.logger import get_logger
-# from utils.auth_middleware import authenticate_user
 
 # Logger específico para este módulo
 logger = get_logger(__name__)
@@ -17,7 +17,7 @@ transaction_controller = TransactionController()
 transaction_bp = Blueprint('transactions', __name__, url_prefix='/api/transactions')
 
 @transaction_bp.route('', methods=['POST'])
-# @authenticate_user
+@authenticate_user
 async def create_transaction():
     """
     Crea una nueva transacción.
@@ -65,7 +65,7 @@ async def create_transaction():
         }), 500
 
 @transaction_bp.route('/<transaction_id>', methods=['GET'])
-# @authenticate_user
+@authenticate_user
 async def get_transaction(transaction_id):
     """
     Obtiene una transacción por su ID.
@@ -99,7 +99,7 @@ async def get_transaction(transaction_id):
         }), 500
 
 @transaction_bp.route('/<transaction_id>', methods=['PUT'])
-# @authenticate_user
+@authenticate_user
 async def update_transaction(transaction_id):
     """
     Actualiza una transacción existente.
@@ -157,7 +157,7 @@ async def update_transaction(transaction_id):
         }), 500
 
 @transaction_bp.route('/<transaction_id>', methods=['DELETE'])
-# @authenticate_user
+@authenticate_user
 async def delete_transaction(transaction_id):
     """
     Elimina una transacción.
@@ -195,7 +195,7 @@ async def delete_transaction(transaction_id):
         }), 500
 
 @transaction_bp.route('', methods=['GET'])
-# @authenticate_user
+@authenticate_user
 async def get_user_transactions():
     """
     Obtiene las transacciones del usuario autenticado con filtros opcionales.
@@ -258,7 +258,7 @@ async def get_user_transactions():
         }), 500
 
 @transaction_bp.route('/statistics', methods=['GET'])
-# @authenticate_user
+@authenticate_user
 async def get_user_statistics():
     """
     Obtiene estadísticas de gastos e ingresos para el usuario autenticado.
@@ -305,7 +305,7 @@ async def get_user_statistics():
         }), 500
 
 @transaction_bp.route('/analyze', methods=['POST'])
-# @authenticate_user
+@authenticate_user
 async def analyze_transactions():
     """
     Inicia un análisis de transacciones para detectar patrones.
