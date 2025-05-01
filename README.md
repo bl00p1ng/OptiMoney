@@ -286,3 +286,146 @@ La configuración del sistema de autenticación puede personalizarse mediante la
 - `JWT_SECRET`: Clave secreta para firmar los tokens JWT
 - `TOKEN_EXPIRY`: Tiempo de validez del token en segundos (por defecto: 86400, es decir, 24 horas)
 - `ENVIRONMENT`: Entorno de la aplicación ("development" o "production")
+
+# Guía de Configuración del Sistema de Autenticación
+
+Este documento explica cómo configurar correctamente el sistema de autenticación de OptiMoney utilizando Firebase Authentication.
+
+## 1. Crear proyecto en Firebase
+
+1. Ve a [Firebase Console](https://console.firebase.google.com/) y crea un nuevo proyecto o usa uno existente.
+2. Asegúrate de que el plan de facturación permita la autenticación.
+
+## 2. Habilitar métodos de autenticación
+
+1. En la consola de Firebase, navega a **Authentication** > **Sign-in method**
+2. Habilita el método **Email/Password**
+
+## 3. Obtener las credenciales necesarias
+
+### Cuenta de servicio (para Backend)
+
+1. En la consola de Firebase, ve a **Configuración del proyecto** > **Cuentas de servicio**
+2. Haz clic en **Generar nueva clave privada**
+3. Guarda el archivo JSON descargado en `credentials/firebase-key.json`
+
+### API Key (para autenticación REST)
+
+1. En la consola de Firebase, ve a **Configuración del proyecto** > **Configuración general**
+2. Copia la **API Key** que aparece en la sección "Configuración de SDK"
+
+## 4. Configurar variables de entorno
+
+Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido, reemplazando los valores con los de tu proyecto:
+
+```
+# Entorno de ejecución
+ENVIRONMENT=development
+
+# Ruta del archivo de credenciales de Firebase
+FIREBASE_CREDENTIALS_PATH=./credentials/firebase-key.json
+
+# API Key de Firebase para autenticación con API REST
+FIREBASE_API_KEY=AIzaSyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Configuración de autenticación
+JWT_SECRET=optimoney_secure_secret_key_personalizado
+TOKEN_EXPIRY=86400
+```
+
+### Generar un JWT_SECRET seguro
+
+Puedes usar este comando para generar una clave secreta segura:
+
+```bash
+python -c "import secrets; print(f'optimoney_{secrets.token_hex(16)}')"
+```
+
+## 5. Verificar la configuración
+
+Para verificar que la configuración funciona correctamente:
+
+1. Reinicia la aplicación
+2. Intenta registrar un usuario:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com", "password":"test123", "name":"Test User"}'
+```
+
+3. Intenta iniciar sesión:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com", "password":"test123"}'
+```
+
+4. Verifica que recibes un token JWT en la respuesta.
+
+## 6. Uso en desarrollo
+
+Para facilitar las pruebas en entorno de desarrollo, puedes usar tokens simplificados:
+
+1. Genera un token de desarrollo:
+
+```bash
+python scripts/create_test_user.py --dev
+```
+
+2. Utiliza el token en tus solicitudes:
+
+```bash
+curl -X GET http://localhost:8080/api/auth/profile \
+  -H "Authorization: Bearer dev_test123"
+```
+
+## 7. Activar la autenticación en las rutas
+
+Una vez configurado el sistema de autenticación, debes descomentar el middleware `@authenticate_user` en todas las rutas que requieran autenticación:
+
+```python
+# Antes
+@transaction_bp.route('', methods=['GET'])
+# @authenticate_user
+async def get_user_transactions():
+    # ...
+
+# Después
+@transaction_bp.route('', methods=['GET'])
+@authenticate_user
+async def get_user_transactions():
+    # ...
+```
+
+## 8. Depuración de problemas comunes
+
+### El token no es aceptado
+
+- Verifica que estás enviando el header correcto: `Authorization: Bearer tu_token`
+- Asegúrate de que el token no ha expirado
+- Comprueba que el JWT_SECRET en el archivo .env coincide con el que se usó para generar el token
+
+### Error en el registro de usuarios
+
+- Verifica que la API Key de Firebase es correcta
+- Comprueba que el método Email/Password está habilitado en Firebase
+- Asegúrate de que el email no está ya registrado
+
+### Error en el inicio de sesión
+
+- Verifica que las credenciales son correctas
+- Comprueba que estás usando la API Key correcta de Firebase
+- Verifica la conexión a Internet (necesaria para la autenticación con Firebase)
+
+## 9. Resumen de endpoints disponibles
+
+- `/api/auth/register` (POST): Registrar nuevo usuario
+- `/api/auth/login` (POST): Iniciar sesión
+- `/api/auth/profile` (GET): Obtener perfil de usuario
+- `/api/auth/profile` (PUT): Actualizar perfil de usuario
+- `/api/auth/change-password` (POST): Cambiar contraseña
+- `/api/auth/verify` (GET): Verificar validez del token
+
+Con esta guía, deberías poder configurar y utilizar correctamente el sistema de autenticación de OptiMoney.
